@@ -1,0 +1,32 @@
+{
+  "name": "surfacemap",
+  "version": "0.1.0",
+  "description": "A living map of how a project's surfaces (CLI, MCP, HTTP, dashboard) connect, generated from the code so it cannot go stale.",
+  "type": "module",
+  "bin": {
+    "surfacemap": "bin/surfacemap.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./adapters": "./src/adapters/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "documentation",
+    "architecture",
+    "diagram",
+    "cli",
+    "mcp",
+    "drift"
+  ],
+  "license": "MIT"
+}
