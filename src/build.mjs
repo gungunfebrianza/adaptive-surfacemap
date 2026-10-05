@@ -7,8 +7,9 @@ export const DEFAULT_KINDS = {
   capability: { label: 'Capability', purpose: 'one feature, grouping every way to reach it' },
   http: { label: 'HTTP route', purpose: 'what the backend serves' },
   dashboard: { label: 'Dashboard', purpose: 'what a person clicks' },
+  client: { label: 'Client file', purpose: 'what the browser code actually calls' },
 };
-const DEFAULT_ORDER = ['cli', 'mcp', 'capability', 'http', 'dashboard'];
+const DEFAULT_ORDER = ['cli', 'mcp', 'capability', 'http', 'dashboard', 'client'];
 
 // Run every adapter against one graph, then compare code with declarations. Returns plain JSON.
 export async function buildGraph(config, { root }) {

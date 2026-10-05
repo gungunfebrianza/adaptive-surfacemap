@@ -31,4 +31,42 @@ export function methodPattern(source) {
   return out;
 }
 
-export const extractors = { literal, expressCalls, methodPattern };
+
+// ---- client-side call extractors: what a browser or app file asks the backend for ----
+// A path segment written as ${...} is a numeric id and becomes :n, a ${...} tacked onto the end is an optional
+// suffix (a query string) and is dropped, and a literal query string is dropped. A call whose path is built at run
+// time ('/x/' + id) cannot be known from text and is skipped.
+const callPath = (raw) => raw.replace(/\/\$\{[^}]*\}/g, '/:n').replace(/\$\{[^}]*\}/g, '').replace(/[?#].*$/, '');
+
+// api('POST', '/x') - a small project-local wrapper, the style Web-Scout's dashboard uses.
+export function apiCalls(source) {
+  const out = [];
+  const pairs = [
+    ...[...source.matchAll(/api\('([A-Z]+)',\s*`([^`]*)`/g)].map((m) => [m[1], m[2]]),
+    ...[...source.matchAll(/api\('([A-Z]+)',\s*(['"])([^'"]*)\2/g)].map((m) => [m[1], m[3]]),
+  ];
+  for (const [method, raw] of pairs) if (!raw.endsWith('/')) out.push(`${method} ${callPath(raw)}`);
+  return out;
+}
+
+// fetch('/x') and fetch('/x', { method: 'POST' }). Absolute URLs are someone else's backend and are skipped.
+export function fetchCalls(source) {
+  const out = [];
+  for (const m of source.matchAll(/fetch\(\s*([`'"])([^`'"]*)\1([^)]{0,200})/g)) {
+    if (!m[2].startsWith('/') || m[2].endsWith('/')) continue;
+    const method = /method:\s*['"]([A-Za-z]+)['"]/.exec(m[3])?.[1]?.toUpperCase() ?? 'GET';
+    out.push(`${method} ${callPath(m[2])}`);
+  }
+  return out;
+}
+
+// axios.get('/x'), http.post('/x'), client.delete('/x') ...
+export function axiosCalls(source) {
+  const out = [];
+  for (const m of source.matchAll(/\b(?:axios|http|client|api)\.(get|post|put|patch|delete)\(\s*(['"`])([^'"`]*)\2/g)) {
+    if (m[3].startsWith('/') && !m[3].endsWith('/')) out.push(`${m[1].toUpperCase()} ${callPath(m[3])}`);
+  }
+  return out;
+}
+
+export const extractors = { literal, expressCalls, methodPattern, apiCalls, fetchCalls, axiosCalls };

@@ -9,6 +9,7 @@ Status: **0.1 scaffold.** It was extracted from [Web-Scout](../Web-Scout), where
 - `docs/surfacemap.html` - one self-contained page. Pick any node and the columns narrow to what it is wired to, two steps out, with a line for each link and a panel that says what it is.
 - `docs/surfacemap.json` - the same graph, for other tools.
 - **Findings** - a declared thing the code does not have (`declared-not-in-code`), a thing in the code nothing exposes (`in-code-not-declared`), a CLI command with no MCP twin and no reason (`cli-without-mcp`), a surface left out with no reason (`gap-without-reason`).
+- With `clientCalls`: a dashboard panel that claims a route no client file calls (`declared-call-not-in-client`), and a client call no panel declares (`client-call-undeclared`). A call to a route the server does not have shows as `declared-not-in-code`.
 
 ## Quick start
 
@@ -43,7 +44,8 @@ An **adapter** reads one source of truth and writes nodes and edges into one gra
 
 | Adapter | Reads | Writes |
 |---|---|---|
-| `routes({ files, extract, internal })` | source files, with an extractor (`literal`, `expressCalls`, `methodPattern`, or your own `(text) => ['GET /x']`) | `http` nodes found in code |
+| `routes({ files, extract, normalize, internal })` | source files, with an extractor (`literal`, `expressCalls`, `methodPattern`, or your own `(text) => ['GET /x']`) | `http` nodes found in code |
+| `clientCalls({ files, extract, normalize })` | client files (a dashboard, a front-end bundle) with `apiCalls`, `fetchCalls` or `axiosCalls` | one `client` node per file, `calls` links to routes |
 | `commands({ rows, fields })` | a CLI spec: `{ cmd, mcp, mcpExempt, read }` | `cli` and `mcp` nodes, `mirrors` and `reads` links |
 | `capabilities({ rows })` | a table: `{ id, http, cli, mcp, dashboard, <surface>Why }` | `capability` and `dashboard` nodes, `exposes` and `calls` links |
 
@@ -61,7 +63,7 @@ The page has no hand-drawn parts. Every node and link comes from code or from a 
 node bin/surfacemap.mjs build --config examples/web-scout.config.mjs
 ```
 
-That builds 370 nodes and 384 links and reports 47 findings. They are real: 47 CLI commands (`dom *`, `idb *`, `net *`, `relay *`, ...) are in `cli-spec.mjs` but no row in `surfaces.mjs` claims them.
+That builds 371 nodes and 446 links (the dashboard file makes 62 distinct calls, all matching what `surfaces.mjs` declares) and reports 47 findings. They are real: 47 CLI commands (`dom *`, `idb *`, `net *`, `relay *`, ...) are in `cli-spec.mjs` but no row in `surfaces.mjs` claims them.
 
 ## Develop
 
@@ -71,7 +73,6 @@ npm test
 
 ## Next
 
-- A `clientCalls` adapter: which routes a dashboard file actually calls, so panels link to real code.
 - Live mode: a `--connect` toggle on the page that reads counts from a running service.
 - Transition tables for state machines (snooze, known-issue review), drawn from the same tested table the code uses.
 - Test-linked nodes: each node points at the test that proves it.

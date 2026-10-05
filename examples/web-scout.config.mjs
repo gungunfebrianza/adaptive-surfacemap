@@ -3,7 +3,7 @@
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { defineConfig } from '../src/config.mjs';
-import { routes, capabilities, commands, extractors } from '../src/adapters/index.mjs';
+import { routes, clientCalls, capabilities, commands, extractors } from '../src/adapters/index.mjs';
 
 const root = process.env.WEB_SCOUT_DIR ?? path.resolve(import.meta.dirname, '../../Web-Scout');
 const load = (file) => import(pathToFileURL(path.join(root, file)).href);
@@ -17,6 +17,7 @@ export default defineConfig({
   out: path.resolve(import.meta.dirname, 'out/web-scout'),
   adapters: [
     routes({ files: ['relay.mjs', 'routes-*.mjs'], extract: extractors.methodPattern, internal: INTERNAL_ROUTES }),
+    clientCalls({ files: ['dashboard.html'], extract: (src) => [...extractors.apiCalls(src), ...extractors.fetchCalls(src)] }),
     commands({ rows: CLI_SPEC }),
     capabilities({ rows: SURFACES }),
   ],
