@@ -14,6 +14,7 @@ export default defineConfig({
   project: 'Web-Scout',
   purpose: 'Every way to reach a Web-Scout feature - CLI, MCP, HTTP and the dashboard - and how they are wired. Built from cli-spec.mjs, surfaces.mjs and the relay source, so a command with no MCP twin or a route no capability claims shows up as a finding.',
   root,
+  live: { target: process.env.WEBSCOUT_URL ?? 'http://127.0.0.1:8973' }, // `surfacemap serve --config examples/web-scout.config.mjs`
   out: path.resolve(import.meta.dirname, 'out/web-scout'),
   adapters: [
     routes({ files: ['relay.mjs', 'routes-*.mjs'], extract: extractors.methodPattern, internal: INTERNAL_ROUTES }),

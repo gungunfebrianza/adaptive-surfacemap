@@ -53,6 +53,29 @@ An adapter is `{ name, run({ graph, root }) }`. Write your own for anything grep
 
 After the adapters run, drift is computed. Only kinds that can be compared are checked, so you can adopt one adapter at a time and get no noise from the rest.
 
+## Live mode
+
+`surfacemap serve` shows the same page, rebuilt from the files on every load, and adds a **Go live** button. Switched on, each route node gets a dot (green answering, amber 4xx, red 5xx or no answer) and a count when the answer is a list (`/items` returning 3 entries shows 3). A capability shows the worst answer among its routes. The detail panel gives status, time, and the count's source.
+
+```sh
+npx surfacemap serve --target http://127.0.0.1:3000   # or set live.target in the config
+```
+
+```js
+live: {
+  target: 'http://127.0.0.1:3000',
+  interval: 5,                    // seconds between checks while the button is on
+  exclude: [/^GET /admin/],      // routes never to call; `include` narrows the other way
+  headers: { authorization: 'Bearer ...' },
+}
+```
+
+- Probing runs in the `serve` process, not the page, so there is no CORS problem and a hung stream cannot stall the page.
+- Only `GET` is sent, only to routes with no path parameters. Everything else is listed in the panel as "not probed" with the reason. A `GET` that changes state in your service would still change it: put it in `exclude`.
+- Each call has a 4 s timeout, event streams are not read, bodies stop at 512 KB.
+- The server listens on 127.0.0.1 only. `surfacemap build` output never has the live switch, so the committed file stays deterministic and `check` is unaffected.
+- Config changes need a restart; code files and declaration tables are re-read on each page load only if the adapters read them from disk (an imported table such as `CLI_SPEC` is cached by Node until restart).
+
 ## Why it does not go stale
 
 The page has no hand-drawn parts. Every node and link comes from code or from a table the project already tests. The output is deterministic (sorted, no timestamps) and CRLF-insensitive, so `check` is a plain byte comparison against a fresh build.
@@ -73,6 +96,5 @@ npm test
 
 ## Next
 
-- Live mode: a `--connect` toggle on the page that reads counts from a running service.
 - Transition tables for state machines (snooze, known-issue review), drawn from the same tested table the code uses.
 - Test-linked nodes: each node points at the test that proves it.
