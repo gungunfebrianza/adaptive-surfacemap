@@ -15,7 +15,8 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "demo": "node examples/demo/run.mjs"
   },
   "engines": {
     "node": ">=20"

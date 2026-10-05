@@ -255,6 +255,7 @@ aside p { margin: 4px 0; }
   if (G.live) {
     $('live').hidden = false;
     $('live').addEventListener('click', function () { setLive(!timer); });
+    if (/[?&]live(=|&|$)/.test(location.search)) setLive(true); // ?live starts it straight away
   }
 
   // ---- detail panel ----

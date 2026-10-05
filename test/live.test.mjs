@@ -9,6 +9,7 @@ import { routes, capabilities, extractors } from '../src/adapters/index.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // A stand-in for the service being mapped.
 function fakeService() {
@@ -117,4 +118,32 @@ test('the served page turns live mode on, /__live probes the service, and a plai
 
   const g = { project: 'p', nodes: [], edges: [], findings: [], columns: [], kinds: {}, purpose: '' };
   assert.doesNotMatch(renderHtml(g), /"live":/, 'a built file has no live switch, so it stays deterministic');
+});
+
+test('the page template has no stray control characters (a backspace once replaced a regex word boundary)', () => {
+  const t = fs.readFileSync(new URL('../src/template.html', import.meta.url), 'utf8');
+  const bad = [...t].filter((c) => c.charCodeAt(0) < 32 && c !== '\n' && c !== '\r' && c !== '\t');
+  assert.deepEqual(bad.map((c) => c.charCodeAt(0)), []);
+  assert.match(t, /\[\?&\]live\(=\|&\|\$\)/, '?live auto-start is present');
+});
+
+test('the demo project: its routes are found in code, the missing one is a finding, and the service misbehaves as documented', async () => {
+  const { loadConfig } = await import('../src/config.mjs');
+  const { buildGraph } = await import('../src/build.mjs');
+  const { startService } = await import('../examples/demo/service.mjs');
+  const config = await loadConfig(fileURLToPath(new URL('../examples/demo/surfacemap.config.mjs', import.meta.url)));
+  const g = await buildGraph(config, { root: config.root });
+  assert.ok(g.nodes.some((n) => n.id === 'http:GET /orders/:id' && n.origins.includes('code')));
+  assert.ok(g.findings.some((f) => f.code === 'declared-not-in-code' && f.nodes.includes('http:GET /legacy')));
+  assert.equal(g.findings.filter((f) => f.level === 'error').length, 0);
+
+  const svc = await startService(0);
+  try {
+    const out = await runProbes(g, { ...config.live, target: svc.url });
+    assert.equal(out.results['http:GET /reports'].status, 500);
+    assert.equal(out.results['http:GET /legacy'].status, 404);
+    assert.equal(out.results['http:GET /customers'].count, 340);
+    assert.ok(out.results['http:GET /orders'].count >= 12);
+    assert.equal(out.skipped['http:GET /health'] && /exclude/.test(out.skipped['http:GET /health']), true);
+  } finally { await new Promise((r) => { svc.server.closeAllConnections(); svc.server.close(r); }); }
 });

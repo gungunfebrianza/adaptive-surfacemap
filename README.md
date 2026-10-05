@@ -65,16 +65,28 @@ npx surfacemap serve --target http://127.0.0.1:3000   # or set live.target in th
 live: {
   target: 'http://127.0.0.1:3000',
   interval: 5,                    // seconds between checks while the button is on
+  timeoutMs: 4000,                // per call; raise it for a route that does real work
   exclude: [/^GET /admin/],      // routes never to call; `include` narrows the other way
   headers: { authorization: 'Bearer ...' },
 }
 ```
 
+- Open the served page with `?live` to start probing straight away.
 - Probing runs in the `serve` process, not the page, so there is no CORS problem and a hung stream cannot stall the page.
 - Only `GET` is sent, only to routes with no path parameters. Everything else is listed in the panel as "not probed" with the reason. A `GET` that changes state in your service would still change it: put it in `exclude`.
 - Each call has a 4 s timeout, event streams are not read, bodies stop at 512 KB.
 - The server listens on 127.0.0.1 only. `surfacemap build` output never has the live switch, so the committed file stays deterministic and `check` is unaffected.
 - Config changes need a restart; code files and declaration tables are re-read on each page load only if the adapters read them from disk (an imported table such as `CLI_SPEC` is cached by Node until restart).
+
+### Try it without a service of your own
+
+```sh
+npm run demo
+```
+
+Starts a small fake shop (`examples/demo/service.mjs`) that misbehaves on purpose - `/orders` grows over time, `/reports` always returns 500, `/search` is slow, `/flaky` fails every third call, `/legacy` is declared but not served - and serves its map with live mode on. Open the printed address with `?live` and watch the dots.
+
+Pointed at Web-Scout it also catches the case live mode exists for: the map is built from one checkout and the service on the port is an older copy, so routes the map lists answer 404.
 
 ## Why it does not go stale
 
